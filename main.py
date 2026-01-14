@@ -6,7 +6,8 @@ from datetime import datetime
 # --- CONFIGURATION ---
 # For local testing, this creates a file 'finance.db' automatically.
 # For production, replace this URL with your cloud database URL (e.g., Postgres).
-DB_URL = "sqlite:///finance.db"
+DB_URL = st.secrets.get("DB_URL", "sqlite:///finance.db")
+
 
 # Simple Password for Login
 SYSTEM_PASSWORD = "blabla123##"
