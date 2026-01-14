@@ -44,7 +44,7 @@ def save_transaction(cheque, data, valor, valor_pago, juros, gerson, maneca):
         })
         conn.commit()
 
-# --- NOVAS FUNÇÕES DE EDIÇÃO/EXCLUSÃO ---
+# --- FUNÇÕES DE EDIÇÃO/EXCLUSÃO ---
 def update_transaction(id_transacao, cheque, data, valor, valor_pago, juros, gerson, maneca):
     engine = get_connection()
     with engine.connect() as conn:
@@ -82,10 +82,11 @@ if not st.session_state['logged_in']:
     st.stop() 
 
 # --- APLICAÇÃO PRINCIPAL ---
+st.set_page_config(layout="wide") # Opcional: Usa a largura total da tela
 st.title("📒 Controle Financeiro")
 init_db()
 
-# Carrega dados para exibir e para preencher os seletores
+# Carrega dados
 df = load_data()
 
 # ---------------------------------------------------------
@@ -99,15 +100,19 @@ if not df.empty:
     df['Total Gerson'] = df['gerson'].cumsum()
     df['Total Maneca'] = df['maneca'].cumsum()
 
-    # Mostramos o ID agora para facilitar a identificação
     colunas_exibicao = ['id', 'cheque', 'data', 'valor', 'valor_pago', 'juros', 'gerson', 'maneca', 'Total Gerson', 'Total Maneca']
+    
+    # --- CÁLCULO DE ALTURA DINÂMICA ---
+    # 35px por linha + 38px para o cabeçalho
+    altura_dinamica = (len(df) * 35) + 38
     
     st.dataframe(
         df[colunas_exibicao], 
         use_container_width=True,
-        hide_index=True, # Esconde o índice numérico do Pandas (0,1,2) para não confundir com o ID do banco
+        hide_index=True,
+        height=altura_dinamica, # <--- AQUI ESTÁ A MÁGICA
         column_config={
-            "id": st.column_config.NumberColumn("ID", format="%d"),
+            "id": st.column_config.NumberColumn("ID", format="%d", width="small"),
             "data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"),
             "valor": st.column_config.NumberColumn("Valor", format="R$ %.2f"),
             "valor_pago": st.column_config.NumberColumn("Valor Pago", format="R$ %.2f"),
@@ -124,11 +129,10 @@ else:
 st.divider()
 
 # ---------------------------------------------------------
-# 2. ÁREA DE GERENCIAMENTO (Abas: Novo | Editar)
+# 2. ÁREA DE GERENCIAMENTO
 # ---------------------------------------------------------
 tab_novo, tab_editar = st.tabs(["➕ Adicionar Novo", "✏️ Editar Existente"])
 
-# --- ABA 1: ADICIONAR ---
 with tab_novo:
     with st.form("entry_form"):
         c1, c2, c3, c4 = st.columns(4)
@@ -147,35 +151,24 @@ with tab_novo:
             st.success("Salvo com sucesso!")
             st.rerun()
 
-# --- ABA 2: EDITAR / EXCLUIR ---
 with tab_editar:
     if df.empty:
         st.warning("Não há transações para editar.")
     else:
-        # Cria uma lista formatada para o Selectbox: "ID - Cheque (Valor)"
-        # Isso ajuda o usuário a escolher a linha certa
         opcoes = df.apply(lambda x: f"{x['id']} - {x['cheque']} (R$ {x['valor']:.2f})", axis=1)
-        
-        # Selectbox para escolher qual editar
         selecao = st.selectbox("Selecione a transação para editar:", options=opcoes)
-        
-        # Pega o ID da string selecionada (ex: "5 - Cheque X..." -> pega 5)
         id_selecionado = int(selecao.split(" - ")[0])
-        
-        # Filtra o DataFrame para pegar os dados atuais dessa linha
         dados_atuais = df[df['id'] == id_selecionado].iloc[0]
 
         st.markdown(f"**Editando ID: {id_selecionado}**")
         
         with st.form("edit_form"):
             ec1, ec2, ec3, ec4 = st.columns(4)
-            # Preenchemos os campos (value=...) com os dados atuais do banco
             e_cheque = ec1.text_input("Cheque", value=dados_atuais['cheque'])
             
-            # Conversão segura de data
             data_atual = dados_atuais['data']
             if isinstance(data_atual, str):
-                data_atual = datetime.strptime(data_atual, '%Y-%m-%d') # Ajuste conforme necessário se der erro de formato
+                data_atual = datetime.strptime(data_atual, '%Y-%m-%d')
             
             e_data = ec2.date_input("Data", value=data_atual)
             e_valor = ec3.number_input("Valor Original", value=float(dados_atuais['valor']), step=0.01)
@@ -188,15 +181,12 @@ with tab_editar:
             
             col_btn1, col_btn2 = st.columns([1, 4])
             
-            atualizar = col_btn1.form_submit_button("💾 Atualizar")
-            excluir = col_btn2.form_submit_button("❌ Excluir Transação", type="primary")
-
-            if atualizar:
+            if col_btn1.form_submit_button("💾 Atualizar"):
                 update_transaction(id_selecionado, e_cheque, e_data, e_valor, e_valor_pago, e_juros, e_gerson, e_maneca)
                 st.success("Atualizado!")
                 st.rerun()
             
-            if excluir:
+            if col_btn2.form_submit_button("❌ Excluir", type="primary"):
                 delete_transaction(id_selecionado)
                 st.warning("Excluído!")
                 st.rerun()
