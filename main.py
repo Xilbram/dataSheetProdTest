@@ -5,8 +5,7 @@ from datetime import datetime
 
 # --- CONFIGURAÇÃO ---
 DB_URL = st.secrets.get("DB_URL", "sqlite:///finance.db")
-SYSTEM_PASSWORD = "blabla123##"
-
+SYSTEM_PASSWORD = st.secrets.get("APP_PASSWORD", "senha_de_fallback_segura")
 def get_connection():
     return create_engine(DB_URL)
 
