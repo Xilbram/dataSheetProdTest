@@ -9,7 +9,7 @@ from datetime import datetime
 DB_URL = "sqlite:///finance.db"
 
 # Simple Password for Login
-SYSTEM_PASSWORD = "teamoPapito123##"
+SYSTEM_PASSWORD = "blabla123##"
 
 
 def get_connection():
