@@ -20,30 +20,19 @@ def get_connection():
 def init_db():
     engine = get_connection()
     with engine.connect() as conn:
+       with engine.connect() as conn:
         conn.execute(text("""
-                          CREATE TABLE IF NOT EXISTS transactions
-                          (
-                              id
-                              INTEGER
-                              PRIMARY
-                              KEY
-                              AUTOINCREMENT,
-                              cheque
-                              TEXT,
-                              data
-                              TEXT,
-                              valor
-                              REAL,
-                              valor_pago
-                              REAL,
-                              juros
-                              REAL,
-                              gerson
-                              REAL,
-                              maneca
-                              REAL
-                          )
-                          """))
+            CREATE TABLE IF NOT EXISTS transactions (
+                id SERIAL PRIMARY KEY,
+                cheque TEXT,
+                data TEXT,
+                valor REAL,
+                valor_pago REAL,
+                juros REAL,
+                gerson REAL,
+                maneca REAL
+            )
+        """))
         conn.commit()
 
 
